@@ -1,0 +1,29 @@
+{
+  "name": "kraken-market-stream",
+  "version": "1.0.0",
+  "description": "A web client for handling communication with Kraken APIs and Web sockets",
+  "main": "main.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "test",
+    "dev": "nodemon"
+  },
+  "type": "module",
+  "keywords": [
+    "kraken",
+    "webservice"
+  ],
+  "author": "Tsvetomir Milchev",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^1.10.0",
+    "express": "^5.1.0",
+    "js-sdsl": "^4.4.2",
+    "ts-node": "^10.9.2"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.4",
+    "nodemon": "^3.1.10",
+    "typescript": "^5.8.3"
+  }
+}
