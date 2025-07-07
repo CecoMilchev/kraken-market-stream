@@ -1,7 +1,7 @@
 import { KrakenChannelEnum } from "../enums/KrakenChannelEnum.js";
 import { KrakenMethodEnum } from "../enums/KrakenMethodEnum.js";
 import { KrakenChannelRouter } from "./KrakenChannelRouter.js";
-import { KrakenMessage } from "./messages/KrakenMessage.js";
+import { KrakenMessage } from "../types/messages/KrakenMessage.js";
 
 const PAIR = "ETH/USD";
 const COUNT = 3;
