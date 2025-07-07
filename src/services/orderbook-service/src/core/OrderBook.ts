@@ -1,6 +1,6 @@
-import { OrderBookLevel } from "./OrderBookLevel.js";
+import { OrderBookLevel } from "../types/OrderBookLevel.js";
 import { OrderBookSide } from "./OrderBookSide.js";
-import { SortDescriptor } from "./SortDescriptor.js";
+import { SortDescriptor } from "../types/SortDescriptor.js";
 
 export type Snapshot = {
     bids: OrderBookLevel[];

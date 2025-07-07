@@ -9,4 +9,4 @@ export type BookSnapshotMessage = {
       asks: Array<{ price: number; qty: number }>;
       checksum: number;
     }>;
-  };
+};s
