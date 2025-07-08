@@ -2,8 +2,5 @@
   "watch": ["src"],
   "ext": "ts",
   "ignore": ["dist", "node_modules"],
-  "exec": "tsc && node dist/app.js",
-  "env": {
-    "NODE_ENV": "development"
-  }
+  "exec": "node --no-warnings --loader ts-node/esm src/app.ts"
 }
