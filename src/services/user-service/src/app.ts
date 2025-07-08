@@ -3,7 +3,6 @@ import dotenv from 'dotenv';
 import bcrypt from 'bcryptjs';
 import sequelize from './config/db.js';
 import { createUserRepository } from './user-service.js';
-import { createAuthMiddleware } from './middleware/AuthMiddleware.js';
 
 dotenv.config();
 
@@ -11,7 +10,6 @@ const app = express();
 app.use(express.json());
 
 const PORT = process.env.USER_PORT || 3001;
-const AUTH_SERVICE_URL = process.env.AUTH_SERVICE_URL || 'http://localhost:3002';
 
 (async () => {
   try {
@@ -19,7 +17,6 @@ const AUTH_SERVICE_URL = process.env.AUTH_SERVICE_URL || 'http://localhost:3002'
     await sequelize.sync({ alter: true });
 
     const userRepository = createUserRepository();
-    const auth = createAuthMiddleware(AUTH_SERVICE_URL);
 
     // Register for new users
     app.post('/users/register', async (req, res) => {
@@ -67,8 +64,8 @@ const AUTH_SERVICE_URL = process.env.AUTH_SERVICE_URL || 'http://localhost:3002'
       }
     });
 
-    // GET All Users 
-    app.get('/users', auth.authenticate, async (req, res) => {
+    // GET All Users (called via API Gateway - already authenticated)
+    app.get('/users', async (req, res) => {
       try {
         const users = await userRepository.findAll();
         res.json({ users });
@@ -77,8 +74,8 @@ const AUTH_SERVICE_URL = process.env.AUTH_SERVICE_URL || 'http://localhost:3002'
       }
     });
 
-    // GET User by ID
-    app.get('/users/:id', auth.authenticate, async (req, res) => {
+    // GET User by ID (called via API Gateway - already authenticated)
+    app.get('/users/:id', async (req, res) => {
       try {
         const id = parseInt(req.params.id);
         if (isNaN(id)) {
@@ -96,8 +93,8 @@ const AUTH_SERVICE_URL = process.env.AUTH_SERVICE_URL || 'http://localhost:3002'
       }
     });
 
-    // UPDATE User
-    app.put('/users/:id', auth.authenticate, async (req, res) => {
+    // UPDATE User (called via API Gateway - already authenticated)
+    app.put('/users/:id', async (req, res) => {
       try {
         const id = parseInt(req.params.id);
         if (isNaN(id)) {
@@ -121,8 +118,8 @@ const AUTH_SERVICE_URL = process.env.AUTH_SERVICE_URL || 'http://localhost:3002'
       }
     });
 
-    // DELETE User
-    app.delete('/users/:id', auth.authenticate, async (req, res) => {
+    // DELETE User (called via API Gateway - already authenticated)
+    app.delete('/users/:id', async (req, res) => {
       try {
         const id = parseInt(req.params.id);
         if (isNaN(id)) {
