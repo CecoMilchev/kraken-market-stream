@@ -8,31 +8,83 @@ import { StatusMessage } from './types/messages/StatusMessage.js';
 import { KrakenChannelEnum } from './enums/KrakenChannelEnum.js';
 import { KrakenWebClient } from './core/KrakenWebClient.js';
 import { HeartBeatMessage } from './types/messages/HeartBeatMessage.js';
+import { KafkaProducerService } from './services/KafkaProducerService.js';
+import { KafkaTopicsEnum } from '../../../enums/KafkaTopicsEnum.js';
 
 const KRAKEN_WSS_URL = process.env.KRAKEN_WSS_URL || "wss://ws.kraken.com/v2";
+const KAFKA_BROKERS = process.env.KAFKA_BROKERS?.split(',') || ['localhost:9092'];
 
 dotenv.config();
 
 const app = express();
-const port = process.env.PORT || 3003;
+const PORT = process.env.PORT || 3003;
+
+const IDENTIFICATOR = "Orderbook Service: ";
 
 app.use(express.json());
 
 const router = new KrakenChannelRouter();
 const orderBookService = new OrderBookService();
+const kafkaProducer = new KafkaProducerService(KAFKA_BROKERS);
+
+let snapshotPublishInterval: NodeJS.Timeout | null = null;
+let isOrderBookReady = false;
+
+(async () => {
+    try {
+        await kafkaProducer.connect();
+        console.log(`${IDENTIFICATOR}✅ Kafka producer initialized`);
+    } catch (error) {
+        console.error(`${IDENTIFICATOR}❌ Failed to initialize Kafka producer:`, error);
+    }
+})();
+
+function startSnapshotPublishing() {
+    if (snapshotPublishInterval) {
+        console.log('📡 Snapshot publishing already started');
+        return;
+    }
+
+    snapshotPublishInterval = setInterval(async () => {
+        try {
+            if (orderBookService.hasValidData() && kafkaProducer.isProducerConnected()) {
+                const snapshot = orderBookService.getOrderBookSnapshot();
+                await kafkaProducer.publishOrderBookSnapshot(snapshot);
+            }
+        } catch (error) {
+            console.error(`${IDENTIFICATOR}❌ Error publishing snapshot:`, error);
+        }
+    }, 1000);
+
+    console.log(`${IDENTIFICATOR}Started publishing orderbook snapshots every 1 second`);
+}
+
+function stopSnapshotPublishing() {
+    if (snapshotPublishInterval) {
+        clearInterval(snapshotPublishInterval);
+        snapshotPublishInterval = null;
+        console.log(`${IDENTIFICATOR}Stopped publishing orderbook snapshots`);
+    }
+}  
 
 router.register(KrakenChannelEnum.STATUS, (msg: StatusMessage) => {
-    console.log("Kraken system status:", msg.data[0].system);
+    console.log(`${IDENTIFICATOR}Kraken system status:`, msg.data[0].system);
 });
 
 router.register(KrakenChannelEnum.HEARTBEAT, (msg: HeartBeatMessage) => {
-    console.log("Kraken system HEARTBEAT");
+    console.log(`${IDENTIFICATOR}Kraken system HEARTBEAT`);
 });
 
 router.register(KrakenChannelEnum.BOOK, (msg: BookSnapshotMessage | BookUpdateMessage) => {
     if (msg.type === "snapshot" || msg.type === "update") {
         orderBookService.applySnapshot(msg.data[0]);
-        console.log("Order book data received:", msg.data[0].symbol);
+        console.log(`${IDENTIFICATOR}Order book data received:`, msg.data[0].symbol);
+        
+        // Start publishing after first valid orderbook data is received
+        if (!isOrderBookReady && !snapshotPublishInterval) {
+            isOrderBookReady = true;
+            startSnapshotPublishing();
+        }
     }
 });
 
@@ -135,8 +187,8 @@ app.use((error: any, req: express.Request, res: express.Response, next: express.
     });
 });
 
-app.listen(port, () => {
-    console.log(`Orderbook Service started on port ${port}`);
+app.listen(PORT, () => {
+    console.log(`${IDENTIFICATOR}🚀 Orderbook Service running on port ${PORT}`);
 });
 
 export default app;
