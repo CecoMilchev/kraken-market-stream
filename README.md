@@ -2,4 +2,4 @@
 
 ## System Design 
 
-![System Design Diagram](system-design.svg)
+![System Design Diagram](misc/system-design.png)
