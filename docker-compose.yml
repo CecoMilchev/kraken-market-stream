@@ -42,3 +42,26 @@ services:
       - redis-data:/data
     restart: unless-stopped
 
+  mysql:
+    image: mysql:8.0
+    hostname: mysql
+    container_name: mysql-db
+    environment:
+      MYSQL_ROOT_PASSWORD: kraken_root_user
+      MYSQL_DATABASE: kraken_market_stream
+      MYSQL_USER: kraken_user
+      MYSQL_PASSWORD: kraken_pass
+      MYSQL_CHARACTER_SET_SERVER: utf8mb4
+      MYSQL_COLLATION_SERVER: utf8mb4_unicode_ci
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    restart: unless-stopped
+
+volumes:
+  zookeeper-data:
+  zookeeper-logs:
+  kafka-data:
+  redis-data:
+  mysql_data:
