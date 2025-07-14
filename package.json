@@ -5,8 +5,25 @@
   "main": "main.ts",
   "scripts": {
     "build": "tsc",
+    "build:all": "concurrently \"npm run build:user\" \"npm run build:analysis\" \"npm run build:orderbook\" \"npm run build:auth\" \"npm run build:gateway\"",
+    "build:user": "cd src/services/user-service && npm run build",
+    "build:analysis": "cd src/services/analysis-service && npm run build",
+    "build:orderbook": "cd src/services/orderbook-service && npm run build",
+    "build:auth": "cd src/services/auth-service && npm run build",
+    "build:gateway": "cd src/services/api-gateway && npm run build",
     "test": "test",
-    "dev": "nodemon"
+    "dev": "nodemon",
+    "start:all": "concurrently \"npm run start:gateway\" \"npm run start:user\" \"npm run start:analysis\" \"npm run start:auth\" \"npm run start:orderbook\"",
+    "start:user": "cd src/services/user-service && npm start",
+    "start:analysis": "cd src/services/analysis-service && npm start",
+    "start:orderbook": "cd src/services/orderbook-service && npm start",
+    "start:auth": "cd src/services/auth-service && npm start",
+    "start:gateway": "cd src/services/api-gateway && npm start",
+    "dev:all": "concurrently \"npm run dev:user\" \"npm run dev:orderbook\" \"npm run dev:auth\" \"npm run dev:gateway\"",
+    "dev:user": "cd src/services/user-service && npm run dev",
+    "dev:orderbook": "cd src/services/orderbook-service && npm run dev",
+    "dev:auth": "cd src/services/auth-service && npm run dev",
+    "dev:gateway": "cd src/services/api-gateway && npm run dev"
   },
   "type": "module",
   "keywords": [
@@ -24,6 +41,7 @@
   "devDependencies": {
     "@types/node": "^24.0.4",
     "nodemon": "^3.1.10",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "concurrently": "^8.2.2"
   }
 }
