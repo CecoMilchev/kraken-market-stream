@@ -70,13 +70,10 @@ export class KafkaConsumerService {
       const snapshot = JSON.parse(payload.message.value.toString()) as OrderBookSnapshot;
       
       // Ensure required fields exist
-      if (!snapshot.symbol || !snapshot.spread || !snapshot.midPrice) {
-        console.log(`${IDENTIFICATOR}⚠️ Incomplete snapshot data: ${JSON.stringify(snapshot)}`);
+      if (!snapshot.symbol) {
         return;
       }
       
-      console.log(`${IDENTIFICATOR}📥 Received: ${snapshot.symbol} - Mid: ${snapshot.midPrice.toFixed(2)}, Spread: ${snapshot.spread.toFixed(4)}`);
-
       // Store in Redis
       await this.storageService.storeSnapshot(snapshot);
       

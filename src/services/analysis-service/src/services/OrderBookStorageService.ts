@@ -22,10 +22,9 @@ export class OrderBookStorageService {
       const latestKey = `latest:${snapshot.symbol}`;
       await this.redis.set(latestKey, JSON.stringify(snapshot));
       
-      // Store in time series (keep last 1000)
       const timeseriesKey = `timeseries:${snapshot.symbol}`;
       await this.redis.lPush(timeseriesKey, JSON.stringify(snapshot));
-      await this.redis.lTrim(timeseriesKey, 0, 999); // Keep last 1000 snapshots
+      await this.redis.lTrim(timeseriesKey, 0, 9999);
       
       console.log(`💾 Stored snapshot: ${snapshot.symbol} - Spread: ${snapshot.spread.toFixed(4)}`);
     } catch (error) {

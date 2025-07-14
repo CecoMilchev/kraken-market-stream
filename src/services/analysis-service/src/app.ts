@@ -4,7 +4,7 @@ import { OrderBookStorageService } from './services/OrderBookStorageService.js';
 import { KafkaConsumerService } from './services/KafkaConsumerService.js';
 
 const app = express();
-const port = process.env.PORT || 3001;
+const port = process.env.PORT || 3004;
 
 app.use(express.json());
 
@@ -12,6 +12,31 @@ app.use(express.json());
 let redisClient: RedisClientType;
 let storageService: OrderBookStorageService;
 let kafkaConsumer: KafkaConsumerService;
+
+app.get('/snapshot/:symbol', async (req, res) => {
+    try {
+        const symbol = decodeURIComponent(req.params.symbol);
+        const snapshot = await storageService.getLatestSnapshot(symbol);
+        if (!snapshot) {
+            return res.status(404).json({ error: 'No snapshot found' });
+        }
+        res.json(snapshot);
+    } catch (error) {
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Get snapshot history
+app.get('/history/:symbol', async (req, res) => {
+    try {
+        const symbol = decodeURIComponent(req.params.symbol);
+        const limit = parseInt(req.query.limit as string) || 10;
+        const snapshots = await storageService.getSnapshotHistory(symbol, limit);
+        res.json(snapshots);
+    } catch (error) {
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
 
 // Health check
 app.get('/health', async (req, res) => {
@@ -31,37 +56,8 @@ app.get('/health', async (req, res) => {
     });
 });
 
-// Get latest snapshot
-app.get('/api/snapshot/:symbol', async (req, res) => {
-    try {
-        const symbol = decodeURIComponent(req.params.symbol);
-        const snapshot = await storageService.getLatestSnapshot(symbol);
-        if (!snapshot) {
-            return res.status(404).json({ error: 'No snapshot found' });
-        }
-        res.json(snapshot);
-    } catch (error) {
-        res.status(500).json({ error: 'Internal server error' });
-    }
-});
-
-// Get snapshot history
-app.get('/api/history/:symbol', async (req, res) => {
-    try {
-        const symbol = decodeURIComponent(req.params.symbol);
-        const limit = parseInt(req.query.limit as string) || 10;
-        const snapshots = await storageService.getSnapshotHistory(symbol, limit);
-        res.json(snapshots);
-    } catch (error) {
-        res.status(500).json({ error: 'Internal server error' });
-    }
-});
-
 (async () => {
     try {
-        console.log('Starting Analysis Service...');
-
-        // Initialize Redis client
         redisClient = createClient({
             url: `redis://${process.env.REDIS_HOST || 'localhost'}:${process.env.REDIS_PORT || '6379'}`
         });

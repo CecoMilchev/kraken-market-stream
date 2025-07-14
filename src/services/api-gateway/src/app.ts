@@ -11,6 +11,7 @@ const PORT = process.env.PORT || 3000;
 const USER_SERVICE_URL = process.env.USER_SERVICE_URL || 'http://localhost:3001';
 const ORDERBOOK_SERVICE_URL = process.env.ORDERBOOK_SERVICE_URL || 'http://localhost:3003';
 const AUTH_SERVICE_URL = process.env.AUTH_SERVICE_URL || 'http://localhost:3002';
+const ANALYSIS_SERVICE_URL = process.env.ANALYSIS_SERVICE_URL || 'http://localhost:3004';
 
 app.use(express.json());
 
@@ -63,12 +64,6 @@ app.get('/health', (req: any, res: any) => {
   });
 });
 
-// Test endpoint to verify proxy is working
-app.get('/test-proxy', (req: any, res: any) => {
-  res.json({ message: 'Direct API Gateway response' });
-});
-
-// Auth routes (public) - simple forwarding
 app.use('/auth/*', async (req: any, res: any) => {
   try {
     const path = req.path.replace('/auth', '');
@@ -93,7 +88,6 @@ app.use('/auth/*', async (req: any, res: any) => {
   }
 });
 
-// User registration (public)
 app.post('/api/users/register', async (req: any, res: any) => {
   try {
     console.log('🔄 Forwarding registration to user service:', req.body);
@@ -115,10 +109,9 @@ app.post('/api/users/register', async (req: any, res: any) => {
   }
 });
 
-// User login (public)
 app.post('/api/users/login', async (req: any, res: any) => {
   try {
-    console.log('🔄 Forwarding login to user service');
+    console.log('🔄 Forwarding login to user service', req.body);
     
     const response = await fetch('http://localhost:3001/users/login', {
       method: 'POST',
@@ -128,15 +121,41 @@ app.post('/api/users/login', async (req: any, res: any) => {
       body: JSON.stringify(req.body)
     });
     
-    const data = await response.json();
-    res.status(response.status).json(data);
+    const userData = await response.json();
+    console.log('📊 User service response:', response.status, userData);
+    
+    if (response.ok && (userData.success || userData.valid)) {
+      // Generate JWT token after successful login
+      const tokenResponse = await fetch(`${AUTH_SERVICE_URL}/generate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          userId: userData.user.id,
+          email: userData.user.email,
+          username: userData.user.username
+        })
+      });
+      
+      if (tokenResponse.ok) {
+        const tokenData = await tokenResponse.json();
+        res.status(200).json({
+          success: true,
+          message: 'Login successful',
+          token: tokenData.token,
+          user: userData.user
+        });
+      } else {
+        res.status(500).json({ error: 'Failed to generate token' });
+      }
+    } else {
+      res.status(response.status).json(userData);
+    }
   } catch (error: any) {
     console.error('❌ User login error:', error.message);
     res.status(503).json({ error: 'User service unavailable' });
   }
 });
 
-// User service routes (protected) - simple forwarding
 app.use('/api/users', verifyToken, async (req: any, res: any) => {
   try {
     const path = req.path.replace('/api/users', '/users');
@@ -161,7 +180,6 @@ app.use('/api/users', verifyToken, async (req: any, res: any) => {
   }
 });
 
-// Orderbook service routes (protected) - simple forwarding
 app.use('/api/orderbook', verifyToken, async (req: any, res: any) => {
   try {
     const path = req.path.replace('/api/orderbook', '');
@@ -186,6 +204,30 @@ app.use('/api/orderbook', verifyToken, async (req: any, res: any) => {
   }
 });
 
+app.use('/api/analysis', verifyToken, async (req: any, res: any) => {
+  try {
+    const path = req.path.replace('/api/analysis', '');
+    const url = `${ANALYSIS_SERVICE_URL}${path}`;
+    
+    console.log('🔄 Forwarding analysis request to:', url);
+    
+    const response = await fetch(url, {
+      method: req.method,
+      headers: {
+        'Content-Type': 'application/json',
+        ...req.headers
+      },
+      body: req.method !== 'GET' ? JSON.stringify(req.body) : undefined
+    });
+    
+    const data = await response.json();
+    res.status(response.status).json(data);
+  } catch (error: any) {
+    console.error('❌ Analysis service error:', error.message);
+    res.status(503).json({ error: 'Analysis service unavailable' });
+  }
+});
+
 // Catch-all
 app.use('*', (req: any, res: any) => {
   res.status(404).json({ 
@@ -197,17 +239,14 @@ app.use('*', (req: any, res: any) => {
       'POST /api/users/register (public)',
       'POST /api/users/login (public)', 
       '/api/users/* (requires Bearer token)',
-      '/api/orderbook/* (requires Bearer token)'
+      '/api/orderbook/* (requires Bearer token)',
+      '/api/analysis/* (requires Bearer token)'
     ]
   });
 });
 
 app.listen(PORT, () => {
   console.log(`🚀 API Gateway running on port ${PORT}`);
-//   console.log(`📡 Routing to:`);
-//   console.log(`   Auth: ${AUTH_SERVICE_URL}`);
-//   console.log(`   Users: ${USER_SERVICE_URL}`);
-//   console.log(`   Orderbook: ${ORDERBOOK_SERVICE_URL}`);
 });
 
 export default app;
