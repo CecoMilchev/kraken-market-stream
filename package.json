@@ -19,6 +19,8 @@
     "start:orderbook": "cd src/services/orderbook-service && npm start",
     "start:auth": "cd src/services/auth-service && npm start",
     "start:gateway": "cd src/services/api-gateway && npm start",
+    "setup:all": "npm run install:all && npm run build:all && npm run start:all",
+    "install:all": "concurrently \"cd src/services/user-service && npm install\" \"cd src/services/analysis-service && npm install\" \"cd src/services/orderbook-service && npm install\" \"cd src/services/auth-service && npm install\" \"cd src/services/api-gateway && npm install\"",
     "dev:all": "concurrently \"npm run dev:user\" \"npm run dev:orderbook\" \"npm run dev:auth\" \"npm run dev:gateway\"",
     "dev:user": "cd src/services/user-service && npm run dev",
     "dev:orderbook": "cd src/services/orderbook-service && npm run dev",
